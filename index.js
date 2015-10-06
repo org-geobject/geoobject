@@ -25,7 +25,10 @@ var conString = "postgres://" +
                config.pg.host + "/" + 
                config.pg.db;
 
-
+//HEARTBEAT para balanceador
+server.get({path: '/test'},function(req, res, next) {
+	res.send('Ok');
+});
 /************************* GET *************************/
 /*
 If the GET request is successful, the service will respond with a 200 OK status code and a representation of the state of the resource.
