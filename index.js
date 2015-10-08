@@ -973,4 +973,4 @@ server.put(
 );
 
 server.listen(config.port);
-console.log("GeoObject Listening on port: " + config.port + " Host: " +config.host);
+console.log("GeoObject Listening on port: " + config.port);
