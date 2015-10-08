@@ -9,8 +9,8 @@ var corsOptions={
         headers : [ "location"]
 }
 server.use(restify.CORS(corsOptions));
-// No 'Access-Control-Allow-Origin' header is present on the requested resource. 
-// Origin 'http://localhost:9000' is therefore not allowed access. 
+// No 'Access-Control-Allow-Origin' header is present on the requested resource.
+// Origin 'http://localhost:9000' is therefore not allowed access.
 
 server.use(restify.fullResponse());
 server.use(restify.bodyParser());
@@ -19,10 +19,10 @@ server.use(restify.bodyParser());
 var config = JSON.parse(fs.readFileSync('/etc/nodejs-config/GeoObject.json'));
 
 // connection string to GeoObject database
-var conString = "postgres://" + 
+var conString = "postgres://" +
                config.pg.user + ":" +
-               config.pg.pass + "@" + 
-               config.pg.host + "/" + 
+               config.pg.pass + "@" +
+               config.pg.host + "/" +
                config.pg.db;
 
 //HEARTBEAT para balanceador
@@ -33,19 +33,19 @@ server.get({path: '/test'},function(req, res, next) {
 /*
 If the GET request is successful, the service will respond with a 200 OK status code and a representation of the state of the resource.
 
-We’re only going to consider two failure cases for GET. 
-The first is where the client requests a continent that doesn’t exist, and 
-the second is where the server fails in an unspecified manner. 
+We’re only going to consider two failure cases for GET.
+The first is where the client requests a continent that doesn’t exist, and
+the second is where the server fails in an unspecified manner.
 For these situations we use the 404 and 500 status codes to signify that a continent hasn’t been found or that the server failed, respectively.
 */
 
 
 /*GET list of continents.*/
 server.get(
-   {path: '/continents', version:'1.0.0'}, 
+   {path: '/continents', version:'1.0.0'},
    function(req,res,next){
       pg.connect(conString, function(err, client, done){
-      
+
       //Return if an error occurs
       if(err) {
         done();
@@ -105,7 +105,7 @@ server.get(
 
         var responseArray = [];
         client.query(sql, function(err, result) {
-          done(); //release the pg client back to the pool 
+          done(); //release the pg client back to the pool
           //Return if an error occurs
           if(err) {
             console.error('error fetching client from pool', err);
@@ -127,7 +127,7 @@ server.get(
                 comment: data.comment,
                 _links: {
                   continent: {
-                    href: 'http://'+config.host+':'+ config.port + "/continents/" + data.code,
+                    href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/continents/" + data.code,
                     type: 'application/json'
                   }
                 }
@@ -148,7 +148,7 @@ server.get(
 
 /*GET continent by code.*/
 server.get(
-    {path: '/continents/:code', version:'1.0.0'}, 
+    {path: '/continents/:code', version:'1.0.0'},
     function(req,res,next){
       pg.connect(conString, function(err, client, done){
       //Return if an error occurs
@@ -166,7 +166,7 @@ server.get(
       //console.log(sql);
 
       client.query(sql, function(err, result) {
-        done(); //release the pg client back to the pool 
+        done(); //release the pg client back to the pool
         //Return if an error occurs
         if(err) {
           console.error('error fetching client from pool', err);
@@ -187,7 +187,7 @@ server.get(
           _links: {
             continent: {
               rel : 'self',
-              href: 'http://'+config.host+':' + config.port + "/continents/" + result.rows[0].code,
+              href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/continents/" + result.rows[0].code,
               type: 'application/json'
             }
           }
@@ -204,12 +204,12 @@ server.get(
 
 /*GET list of countries.*/
 server.get(
-    {path: '/countries', version:'1.0.0'}, 
+    {path: '/countries', version:'1.0.0'},
     function(req,res,next){
       pg.connect(conString, function(err, client, done){
         //Return if an error occurs
         if(err) {
-          done(); //release the pg client back to the pool 
+          done(); //release the pg client back to the pool
           console.error('error fetching client from pool', err);
           res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
           return next();
@@ -220,7 +220,7 @@ server.get(
           sql += " ORDER BY common_name";
         var responseArray = [];
         client.query(sql, function(err, result) {
-          done(); //release the pg client back to the pool 
+          done(); //release the pg client back to the pool
           if(err) {
             console.error('error fetching client from pool', err);
             res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
@@ -241,7 +241,7 @@ server.get(
                 code_iso_num: data.code_iso_num,
                 name_iso: data.name_iso,
                 common_name: data.common_name,
-		flag: 'http://'+config.host+':'+ config.port + "/flags/" + data.code_iso_alfa3.toLowerCase() +".svg",
+		flag: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/flags/" + data.code_iso_alfa3.toLowerCase() +".svg",
                 comment: data.comment,
                 citizenship: data.citizenship,
                 phone_code: data.phone_code,
@@ -249,7 +249,7 @@ server.get(
                 entity_code_iso_alfa2: data.entity_code_iso_alfa2,
                 _links: {
                   country: {
-                    href: 'http://'+config.host+':'+ config.port + "/countries/" + data.code_iso_alfa3,
+                    href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/countries/" + data.code_iso_alfa3,
                     type: 'application/json'
                   }
                 }
@@ -274,13 +274,13 @@ server.get(/\/flags\/?.*/, restify.serveStatic({
 
 /*GET country by code_iso_alfa3.*/
 /*server.get(
-    {path: '/countries/:code_iso_alfa3', version:'1.0.0'}, 
+    {path: '/countries/:code_iso_alfa3', version:'1.0.0'},
     function(req,res,next){
       console.log("el code");
       pg.connect(conString, function(err, client, done){
       //Return if an error occurs
       if(err) {
-        done(); //release the pg client back to the pool 
+        done(); //release the pg client back to the pool
         console.error('error fetching client from pool', err);
         res.send(500);
         return next();
@@ -293,7 +293,7 @@ server.get(/\/flags\/?.*/, restify.serveStatic({
       console.log(sql);
 
       client.query(sql, function(err, result) {
-        done(); //release the pg client back to the pool 
+        done(); //release the pg client back to the pool
         //Return if an error occurs
         if(err) {
           console.error('error fetching client from pool', err);
@@ -319,7 +319,7 @@ server.get(/\/flags\/?.*/, restify.serveStatic({
           _links: {
             country: {
               rel : 'self',
-              href: 'http://'+config.host+':' + config.port + "/countries/" + result.rows[0].code_iso_alfa3,
+              href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/countries/" + result.rows[0].code_iso_alfa3,
               type: 'application/json'
             }
           }
@@ -336,12 +336,12 @@ server.get(/\/flags\/?.*/, restify.serveStatic({
 
 /*GET the countries of a continent(code)*/
 server.get(
-    {path: '/continents/:code/countries', version:'1.0.0'}, 
+    {path: '/continents/:code/countries', version:'1.0.0'},
     function(req,res,next){
       pg.connect(conString, function(err, client, done){
       //Return if an error occurs
       if(err) {
-        done(); //release the pg client back to the pool 
+        done(); //release the pg client back to the pool
         console.error('error fetching client from pool', err);
         res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
         return next();
@@ -354,7 +354,7 @@ server.get(
       var responseArray = [];
 
       client.query(sql, function(err, result) {
-        done(); //release the pg client back to the pool 
+        done(); //release the pg client back to the pool
         //Return if an error occurs
         if(err) {
           console.error('error fetching client from pool', err);
@@ -376,7 +376,7 @@ server.get(
               code_iso_num: data.code_iso_num,
               name_iso: data.name_iso,
               common_name: data.common_name,
-              flag: 'http://'+config.host+':'+ config.port + "/flags/" + data.code_iso_alfa3.toLowerCase() +".svg",
+              flag: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/flags/" + data.code_iso_alfa3.toLowerCase() +".svg",
               comment: data.comment,
               citizenship: data.citizenship,
               phone_code: data.phone_code,
@@ -385,11 +385,11 @@ server.get(
               name: data.name,
               _links: {
                 continent: {
-                  href: 'http://'+config.host+':' + config.port + "/continents/" + req.params.code,
+                  href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/continents/" + req.params.code,
                   type: 'application/json'
                 },
                 country: {
-                  href: 'http://'+config.host+':' + config.port + "/countries/" + data.code_iso_alfa3,
+                  href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/countries/" + data.code_iso_alfa3,
                   type: 'application/json'
                 }
               }
@@ -409,12 +409,12 @@ server.get(
 
 /*GET list of provinces.*/
 server.get(
-    {path: '/provinces', version:'1.0.0'}, 
+    {path: '/provinces', version:'1.0.0'},
     function(req,res,next){
       pg.connect(conString, function(err, client, done){
         //Return if an error occurs
         if(err) {
-          done(); //release the pg client back to the pool 
+          done(); //release the pg client back to the pool
           console.error('error fetching client from pool', err);
           res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
           return next();
@@ -425,7 +425,7 @@ server.get(
 
         var responseArray = [];
         client.query(sql, function(err, result) {
-          done(); //release the pg client back to the pool 
+          done(); //release the pg client back to the pool
           if(err) {
             console.error('error fetching client from pool', err);
             res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
@@ -447,7 +447,7 @@ server.get(
                 comment: data.comment,
                 _links: {
                   province: {
-                    href: 'http://'+config.host+':'+ config.port + "/provinces/" + data.code_iso,
+                    href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/provinces/" + data.code_iso,
                     type: 'application/json'
                   }
                 }
@@ -467,7 +467,7 @@ server.get(
 
 /*GET province by code.*/
 server.get(
-    {path: '/provinces/:code', version:'1.0.0'}, 
+    {path: '/provinces/:code', version:'1.0.0'},
     function(req,res,next){
       pg.connect(conString, function(err, client, done){
       //Return if an error occurs
@@ -484,7 +484,7 @@ server.get(
       //console.log(sql);
 
       client.query(sql, function(err, result) {
-        done(); //release the pg client back to the pool 
+        done(); //release the pg client back to the pool
         //Return if an error occurs
         if(err) {
           console.error('error fetching client from pool', err);
@@ -505,7 +505,7 @@ server.get(
           _links: {
             continent: {
               rel : 'self',
-              href: 'http://'+config.host+':' + config.port + "/provinces/" + result.rows[0].code_iso,
+              href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/provinces/" + result.rows[0].code_iso,
               type: 'application/json'
             }
           }
@@ -522,12 +522,12 @@ server.get(
 
 /*GET list provinces of a country(code)*/
 server.get(
-    {path: '/countries/:code/provinces', version:'1.0.0'}, 
+    {path: '/countries/:code/provinces', version:'1.0.0'},
     function(req,res,next){
       pg.connect(conString, function(err, client, done){
       //Return if an error occurs
       if(err) {
-        done(); //release the pg client back to the pool 
+        done(); //release the pg client back to the pool
         console.error('error fetching client from pool', err);
         res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
         return next();
@@ -541,7 +541,7 @@ server.get(
       var responseArray = [];
 
       client.query(sql, function(err, result) {
-        done(); //release the pg client back to the pool 
+        done(); //release the pg client back to the pool
         //Return if an error occurs
         if(err) {
           console.error('error fetching client from pool', err);
@@ -564,11 +564,11 @@ server.get(
               comment: data.comment,
               _links: {
                 country: {
-                  href: 'http://'+config.host+':' + config.port + "/countries/" + req.params.code,
+                  href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/countries/" + req.params.code,
                   type: 'application/json'
                 },
                 province: {
-                  href: 'http://'+config.host+':' + config.port + "/provinces/" + data.code_iso,
+                  href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/provinces/" + data.code_iso,
                   type: 'application/json'
                 }
               }
@@ -615,7 +615,7 @@ server.get(
             //console.log(sql);
 
             client.query(sql, function(err, result) {
-              done(); //release the pg client back to the pool 
+              done(); //release the pg client back to the pool
               //Return if an error occurs
               if(err) {
                 console.error('error fetching client from pool', err);
@@ -627,7 +627,7 @@ server.get(
                 res.send(404, {code: 404, message: 'Not Found', description: 'Country not found.'});
                 return next();
               }
-              
+
               var dto = {
                 id: result.rows[0].id,
                 code_iso_alfa2: result.rows[0].code_iso_alfa2,
@@ -635,7 +635,7 @@ server.get(
                 code_iso_num: result.rows[0].code_iso_num,
                 name_iso: result.rows[0].name_iso,
                 common_name: result.rows[0].common_name,
-		flag: 'http://'+config.host+':'+ config.port + "/flags/" + result.rows[0].code_iso_alfa3.toLowerCase() +".svg",
+		flag: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/flags/" + result.rows[0].code_iso_alfa3.toLowerCase() +".svg",
                 comment: result.rows[0].comment,
                 citizenship: result.rows[0].citizenship,
                 phone_code: result.rows[0].phone_code,
@@ -646,7 +646,7 @@ server.get(
                 _links: {
                   country: {
                     rel : 'self',
-                    href: 'http://'+config.host+':' + config.port + "/countries/" + result.rows[0].code_iso_alfa3,
+                    href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/countries/" + result.rows[0].code_iso_alfa3,
                     type: 'application/json'
                   }
                 }
@@ -664,7 +664,7 @@ server.get(
           pg.connect(conString, function(err, client, done){
             //Return if an error occurs
             if(err) {
-              done(); //release the pg client back to the pool 
+              done(); //release the pg client back to the pool
               console.error('error fetching client from pool', err);
               res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
               return next();
@@ -677,7 +677,7 @@ server.get(
             //console.log(sql);
 
             client.query(sql, function(err, result) {
-              done(); //release the pg client back to the pool 
+              done(); //release the pg client back to the pool
               //Return if an error occurs
               if(err) {
                 console.error('error fetching client from pool', err);
@@ -696,7 +696,7 @@ server.get(
                 code_iso_num: result.rows[0].code_iso_num,
                 name_iso: result.rows[0].name_iso,
                 common_name: result.rows[0].common_name,
-		flag: 'http://'+config.host+':'+ config.port + "/flags/" + result.rows[0].code_iso_alfa3.toLowerCase() +".svg",
+		flag: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/flags/" + result.rows[0].code_iso_alfa3.toLowerCase() +".svg",
                 comment: result.rows[0].comment,
                 citizenship: result.rows[0].citizenship,
                 phone_code: result.rows[0]. phone_code,
@@ -705,7 +705,7 @@ server.get(
                 _links: {
                   country: {
                     rel : 'self',
-                    href: 'http://'+config.host+':' + config.port + "/countries/" + result.rows[0].code_iso_alfa3,
+                    href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/countries/" + result.rows[0].code_iso_alfa3,
                     type: 'application/json'
                   }
                 }
@@ -732,7 +732,7 @@ If it can’t be deleted, a 405 Method Not Allowed response would be used.
 
 If the client has specified a URI that the server cannot map to a "continent", a 404 Not Found response would be used.
 
-If the service is unavailable to respond to our DELETE request for some other reason, 
+If the service is unavailable to respond to our DELETE request for some other reason,
 the client can expect a 503 Service Unavailable response and might try the request again later.
 */
 
@@ -744,7 +744,7 @@ server.del(
 
         //Return if an error occurs
         if(err) {
-          done(); //release the pg client back to the pool 
+          done(); //release the pg client back to the pool
           console.error('error fetching client from pool', err);
           res.send(503, {code: 503, message: 'Service Unavailable', description: 'Error fetching client from pool. Try again later'});
           return next();
@@ -756,7 +756,7 @@ server.del(
           sql += " AND locale ilike '" + req.header('Accept-Language') +"'";
 
         client.query(sql, function(err, result) {
-          done(); //release the pg client back to the pool 
+          done(); //release the pg client back to the pool
           //Return if an error occurs
           if(err) {//falta de conexion
             console.error('error fetching client from pool', err);
@@ -888,28 +888,28 @@ server.post(
                 res.send(503, {code: 503, message: 'Service Unavailable', description: 'Error fetching client from pool. Try again later'});
                 return next();
               }
-              res.header('Location', 'http://'+config.host+':' + config.port + '/continents/' + req.body.code);
+              res.header('Location', 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + '/continents/' + req.body.code);
               res.send(201);
             });
           });
         });
       }); //cierra connect
     }//cierra funcion
-);  
+);
 
 
 /************************* UPDATE *************************/
 /*
-When the PUT request is accepted and processed by the service, 
+When the PUT request is accepted and processed by the service,
 the consumer will receive either a 200 OK response or a 204 No Content response.
 
-200  with a response body is more descriptive and actively confirms the server-side state, 
+200  with a response body is more descriptive and actively confirms the server-side state,
 while 204 is more efficient since it returns no representation and indicates that the server has accepted the request representation verbatim.
 
-If a request has failed because of incompatible state. 
+If a request has failed because of incompatible state.
 To signal conflicting state to the client, the service responds with a 409 Conflict status code.
 
-In keeping with the HTTP specification, the response body includes enough information for the client to understand and 
+In keeping with the HTTP specification, the response body includes enough information for the client to understand and
 potentially fix the problem, if at all possible.
 
 500 Internal Server Error response code is equally straight-forward when using PUT simply wait and retry.
