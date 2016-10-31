@@ -535,13 +535,12 @@ server.get(
       }
 
       //querying database
-      var sql = 'SELECT province.id, province.code_iso, province.name, province.description, province.comment FROM geo_object.province province LEFT JOIN geo_object.country country ON province.country_id = country.id WHERE province.erased=false AND country.code_iso_alfa3 ilike ';
-        sql += "'" + req.params.code + "'";
-        sql += " ORDER BY name";
+      var sql = 'SELECT province.id, province.code_iso, province.name, province.description, province.comment FROM geo_object.province province LEFT JOIN geo_object.country country ON province.country_id = country.id WHERE province.erased=false AND (country.code_iso_alfa3 ilike $1  OR country.code_iso_alfa2 ilike $1) ORDER BY name;';
+      var params = [req.params.code];
 
       var responseArray = [];
 
-      client.query(sql, function(err, result) {
+      client.query(sql, params, function(err, result) {
         done(); //release the pg client back to the pool
         //Return if an error occurs
         if(err) {
@@ -602,7 +601,7 @@ server.get(
       }
 
       //querying database
-      var sql = 'SELECT id, code, short_name, name, country_code_iso_alfa3, comment FROM geo_object.person_identity_type WHERE country_code_iso_alfa3=$1 OR code=$2 AND erased=false ORDER BY name';
+      var sql = 'SELECT id, code, short_name, name, country_code_iso_alfa3, comment FROM geo_object.person_identity_type WHERE (country_code_iso_alfa3=$1 OR country_code_iso_alfa2=$1) OR code=$2 AND erased=false ORDER BY name';
       var params = [req.params.code, "WORLD_PASS"];
 
       var responseArray = [];
@@ -732,8 +731,10 @@ server.get(
             }
 
             //querying database
-            var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, phone_code, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND code_iso_alfa3 ilike ';
+            var sql = 'SELECT id, code_iso_alfa2, code_iso_alfa3, code_iso_num, name_iso, common_name, comment, citizenship, phone_code, entity, entity_code_iso_alfa2 FROM geo_object.country WHERE erased=false AND (code_iso_alfa3 ilike ';
               sql += "'" + req.params[1] + "'";
+              sql += " OR code_iso_alfa2 ilike ";
+              sql += "'" + req.params[1] + "')";
               sql += " ORDER BY common_name";
             //console.log(sql);
 
