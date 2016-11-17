@@ -646,6 +646,66 @@ server.get(
 });
 
 
+/*GET list identityType of a country(code)*/
+server.get(
+    {path: '/countries/:code/identity_types/:identity_type_code', version:'1.0.0'},
+    function(req,res,next){
+      pg.connect(conString, function(err, client, done){
+      //Return if an error occurs
+      if(err) {
+        done(); //release the pg client back to the pool
+        console.error('error fetching client from pool', err);
+        res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
+        return next();
+      }
+
+      //querying database
+      var sql = 'SELECT id, code, short_name, name, country_code_iso_alfa3, comment FROM geo_object.person_identity_type WHERE (country_code_iso_alfa3=$1 OR country_code_iso_alfa2=$1) AND erased=false AND code=$2';
+      var params = [req.params.code, req.params.identity_type_code];
+
+      var responseArray = [];
+
+      client.query(sql, params, function(err, result) {
+        done(); //release the pg client back to the pool
+        //Return if an error occurs
+        if(err) {
+          console.error('error fetching client from pool', err);
+          res.send(500, {code: 500, message: 'Internal Server Error', description: 'Error fetching client from pool. Try again later'});
+          return next();
+        }
+
+        if(!result.rows[0]) {
+          res.send(404, {code: 404, message: 'Not Found', description: 'identity types not found.'});
+          return next();
+        }
+        // Storing result in an array
+        result.rows.forEach(
+          function(data) {
+            var dto = {
+              id: data.id,
+              code: data.code,
+              short_name: data.short_name,
+              name: data.name,
+              description: data.description,
+              comment: data.comment,
+              _links: {
+                country: {
+                  href: 'http://'+(req.headers['x-forwarded-host']||req.headers.host) + "/countries/" + req.params.code,
+                  type: 'application/json'
+                }
+              }
+            };
+            responseArray.push(dto);
+          }
+        );
+        res.json(responseArray);
+        res.send(200);
+      });
+    });
+});
+
+
+
 
 
 /*GET countries by latitude,longitude OR code_iso_alfa3*/
